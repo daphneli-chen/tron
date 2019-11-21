@@ -10,6 +10,62 @@ import random, math
 
 class StudentBot:
     """ Write your student bot here"""
+    def __init__(self):
+        order = ["U", "D", "L", "R"]
+        random.shuffle(order)
+        self.BOT_NAME = "Patrick's Pet Rock from Spongebob"
+        self.order = order
+        self.prev_direction = "U"
+        self.loc = None
+        self.distance_in_dir = 0
+
+
+    def validNeighbors(self, board, curr, visited):
+        ret =[]
+        curr_r = curr[0]
+        curr_c = curr[1]
+        actions = TronProblem.get_safe_actions(board, curr)
+        for action in actions:
+            if (action == 'U'):
+                loc = (curr_r - 1, curr_c)
+                if loc not in visited:
+                    ret.append((curr_r - 1, curr_c))
+            else if (action == 'D'):
+                loc = (curr_r + 1, curr_c)
+                if loc not in visited:
+                    ret.append(loc)
+            else if (action == 'L'):
+                loc = (curr_r, curr_c - 1)
+                if loc not in visited:
+                    ret.append(loc)
+            else if (action == 'R'):
+                loc = (curr_r, curr_c + 1)
+                if loc not in visited:
+                    ret.append(loc)
+        return ret
+
+    def bfs(self, start, board):
+        q = []
+        dist = {}
+        parent = {}
+        q.append(start)
+        # parent[start] = None
+        while len(q) != 0:
+            curr = q.pop(0) #gets the first item
+            v.add(curr) #marked as visited
+            if curr in parent:
+                dist[curr] = dist[parent[curr]] + 1
+            else:
+                dist[curr] = 0 #it was our start point
+            for neighbor in self.validNeighbors(board, curr, dist):
+                parent[neighbor] = curr
+            q.append(self.validNeighbors(board, curr))
+        return dist
+
+    def voronoi(self, board):
+        """
+        """
+
 
     def decide(self, asp):
         """
@@ -19,8 +75,7 @@ class StudentBot:
         To get started, you can get the current
         state by calling asp.get_start_state()
         """
-        print("hello")
-	print("matt was here")
+
         return "U"
 
     def cleanup(self):
