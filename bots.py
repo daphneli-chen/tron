@@ -20,6 +20,7 @@ class StudentBot:
         state by calling asp.get_start_state()
         """
         print("hello")
+	print("matt was here")
         return "U"
 
     def cleanup(self):
