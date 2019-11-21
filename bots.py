@@ -19,6 +19,7 @@ class StudentBot:
         To get started, you can get the current
         state by calling asp.get_start_state()
         """
+        print("hello")
         return "U"
 
     def cleanup(self):
