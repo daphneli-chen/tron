@@ -62,10 +62,21 @@ class StudentBot:
             q.append(self.validNeighbors(board, curr))
         return dist
 
-    def voronoi(self, board):
+    def voronoi(self, state):
         """
         """
+        num_players = len(state.player_locs)
+        me = state.ptm
+        #TODO: run bfs for each player, so for each player we have stored a dict where
+        #each coordinate's minimum distance is found and compare which player has the
+        #shortest distance to go by iterating through each location, your heuristics
+        #is determined by how many more space u have :)
 
+        #TODOs: run bfs for each player
+
+        #TODO: iterate through each location
+
+        #TODO: calculate heuristic
 
     def decide(self, asp):
         """
@@ -75,7 +86,12 @@ class StudentBot:
         To get started, you can get the current
         state by calling asp.get_start_state()
         """
+        #TODO: 1) use heuristic to choose best move (plug in left right whatever)
+        #2. implement heuristic with a minimax w/ cutoff
+        #3. implement alphabeta
 
+
+        #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
         return "U"
 
     def cleanup(self):
