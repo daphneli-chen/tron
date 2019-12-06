@@ -30,21 +30,25 @@ class StudentBot:
                 loc = (curr_r - 1, curr_c)
                 if loc not in visited:
                     ret.append((curr_r - 1, curr_c))
-            else if (action == 'D'):
+            elif (action == 'D'):
                 loc = (curr_r + 1, curr_c)
                 if loc not in visited:
                     ret.append(loc)
-            else if (action == 'L'):
+            elif (action == 'L'):
                 loc = (curr_r, curr_c - 1)
                 if loc not in visited:
                     ret.append(loc)
-            else if (action == 'R'):
+            elif (action == 'R'):
                 loc = (curr_r, curr_c + 1)
                 if loc not in visited:
                     ret.append(loc)
         return ret
 
     def bfs(self, start, board):
+        """
+        start: a tuple representing the player's location
+        board: the board of the game
+        """
         q = []
         dist = {}
         parent = {}
@@ -62,21 +66,63 @@ class StudentBot:
             q.append(self.validNeighbors(board, curr))
         return dist
 
-    def voronoi(self, state):
+    def voronoi(self, asp, state):
         """
+        asp: a tron problem
+        state: current state of the tron problem
+
+        returns difference
         """
         num_players = len(state.player_locs)
         me = state.ptm
+        other = 0
+        if me == 0:
+            other = 1
         #TODO: run bfs for each player, so for each player we have stored a dict where
         #each coordinate's minimum distance is found and compare which player has the
         #shortest distance to go by iterating through each location, your heuristics
         #is determined by how many more space u have :)
+        # player_dicts = {}
+        # num_players = len(asp.player_locs)
+        # for p in range(num_players):
+        #     player_dicts[p] = self.bfs(asp.player_locs[p])
+        # player_counts = np.zeros(num_players)
+        #
+        # for r in range(len(board)):
+        #     for c in range(len(board[0])):
+        #         best_player = 0
+        #         min_moves = int(float("inf"))
+        #         for p in range(num_players):
+        #             curr_dict = player_dicts[p]
+        #             if curr_dict[(r,c)] < min_moves:
+        #                 best_player = p
+        #                 min_moves = curr_dict[(r,c)]
+        #             if curr_dict[(r,c)] == min_moves:
+        #
+        #         player_counts[best_player] = player_counts[best_player] + 1
+        # difference = player_counts[0]
+        # for i in range(1, num_players)
 
-        #TODOs: run bfs for each player
+        my_dict = self.bfs(asp.player_locs[p])
+        other_dict = self.bfs(asp.player_locs[other])
 
-        #TODO: iterate through each location
-
-        #TODO: calculate heuristic
+        my_count = 0
+        other_count = 0
+        for r in range(len(board)):
+            for c in range(len(board[0])):
+                if (r,c) not in my_dict and (r,c) not in other_dict:
+                    continue
+                elif (r,c) not in my_dict:
+                    other_count +=1
+                    continue
+                elif (r,c) not in other_dict:
+                    my_count += 1
+                    continue
+                if other_dict[(r,c)] < my_dict[(r,c)]:
+                    other_count += 1
+                elif other_dict[(r,c)] != my_dict[(r,c)]:
+                    my_count += 1
+        return my_count - other_count
 
     def decide(self, asp):
         """
@@ -88,11 +134,54 @@ class StudentBot:
         """
         #TODO: 1) use heuristic to choose best move (plug in left right whatever)
         #2. implement heuristic with a minimax w/ cutoff
+        start_state = asp.get_start_state()
+        possibleActions = asp.get_available_actions(start_state)
+        me = start_state.player_to_move()
+        actionBest = "U"
+
+        bestVal = float("-inf")
+        depth = 1
+        alpha = float("-inf")
+
         #3. implement alphabeta
-
-
+        for action in possibleActions:
+            newState = asp.transition(start_state, action)
+            receivedVal = abCutMin(asp, newState, alpha, float("inf"), cutoff_ply, depth, me)
+            if receivedVal > bestVal:
+                bestVal = receivedVal
+                actionBest = action
+            alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
-        return "U"
+        return actionBest
+
+
+    def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
+        if asp.is_terminal_state(state):
+            return asp.evaluate_state()[actingPlayer]
+        if depth >= cutoff:
+            return self.voronoi(asp, state)
+
+        value = float("-inf")
+        for actions in asp.get_available_actions(state):
+            value = max(value, self.abCutMin(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
+            if value >= beta:
+                return value
+            alpha = max(alpha, value)
+        return value
+
+    def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
+        if asp.is_terminal_state(state):
+            return asp.evaluate_state()[actingPlayer]
+        if depth >= cutoff:
+            return self.voronoi(asp, state)
+
+        value = float("inf")
+        for actions in asp.get_available_actions(state):
+            value = max(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
+            if value <= alpha:
+                return value
+            beta = min(beta, value)
+        return value
 
     def cleanup(self):
         """
