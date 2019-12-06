@@ -64,7 +64,7 @@ class StudentBot:
                 dist[curr] = 0 #it was our start point
             for neighbor in self.validNeighbors(board, curr, dist):
                 parent[neighbor] = curr
-            q.append(self.validNeighbors(board, curr, dist))
+            q = q + self.validNeighbors(board, curr, dist)
         return dist
 
     def voronoi(self, asp, state):
