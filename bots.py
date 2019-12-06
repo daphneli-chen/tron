@@ -146,7 +146,7 @@ class StudentBot:
         #3. implement alphabeta
         for action in possibleActions:
             newState = asp.transition(start_state, action)
-            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), cutoff_ply, depth, me)
+            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 6, depth, me)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
