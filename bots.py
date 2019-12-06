@@ -75,6 +75,7 @@ class StudentBot:
         """
         num_players = len(state.player_locs)
         me = state.ptm
+        board = asp.board
         other = 0
         if me == 0:
             other = 1
@@ -103,8 +104,8 @@ class StudentBot:
         # difference = player_counts[0]
         # for i in range(1, num_players)
 
-        my_dict = self.bfs(state.player_locs[me])
-        other_dict = self.bfs(state.player_locs[other])
+        my_dict = self.bfs(state.player_locs[me], board)
+        other_dict = self.bfs(state.player_locs[other], board)
 
         my_count = 0
         other_count = 0
