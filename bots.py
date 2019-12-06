@@ -75,7 +75,7 @@ class StudentBot:
         """
         num_players = len(state.player_locs)
         me = state.ptm
-        board = asp.board
+        board = state.board
         other = 0
         if me == 0:
             other = 1
