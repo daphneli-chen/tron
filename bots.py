@@ -60,7 +60,7 @@ class StudentBot:
                 dist[curr] = dist[parent[curr]] + 1
             else:
                 dist[curr] = 0 #it was our start point
-            for neighbor in self.validNeighbors(board, curr, dist):
+            for neighbor in self.validNeighbors(board, curr, dist, parent):
                 parent[neighbor] = curr
             q.append(self.validNeighbors(board, curr))
         return dist
