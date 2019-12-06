@@ -103,7 +103,7 @@ class StudentBot:
         # difference = player_counts[0]
         # for i in range(1, num_players)
 
-        my_dict = self.bfs(state.player_locs[p])
+        my_dict = self.bfs(state.player_locs[me])
         other_dict = self.bfs(state.player_locs[other])
 
         my_count = 0
