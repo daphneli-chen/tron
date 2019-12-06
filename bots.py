@@ -56,7 +56,6 @@ class StudentBot:
         # parent[start] = None
         while len(q) != 0:
             curr = q.pop(0) #gets the first item
-            v.add(curr) #marked as visited
             if curr in parent:
                 dist[curr] = dist[parent[curr]] + 1
             else:
