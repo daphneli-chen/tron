@@ -157,7 +157,7 @@ class StudentBot:
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return asp.evaluate_state()[actingPlayer]
+            return asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
 
@@ -171,7 +171,7 @@ class StudentBot:
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return asp.evaluate_state()[actingPlayer]
+            return asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
 
