@@ -73,7 +73,7 @@ class StudentBot:
         """
         q = []
         # dist = {}
-        dist = np.ones((len(board), len(board[0]))) * int(float("inf"))
+        dist = np.ones((len(board), len(board[0]))) * (float("inf"))
         dist[start[0]][start[1]] = 0
         seen = {}
         #uncomment parent dict if you want to know which position led to best transition
