@@ -237,7 +237,7 @@ class StudentBot:
 
         value = float("inf")
         for actions in asp.get_available_actions(state):
-            value = max(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
+            value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
             if value <= alpha:
                 return value
             beta = min(beta, value)
