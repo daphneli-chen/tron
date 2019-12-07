@@ -93,8 +93,8 @@ class StudentBot:
                 if temp_cost < dist[neighbor[0]][neighbor[1]]:
                     dist[neighbor[0]][neighbor[1]] = temp_cost
                     # parent[neighbor] = curr
-                    q.append(neighbor)
-                    # q = q + self.validNeighbors(board, curr, seen)
+                    # q.append(neighbor)
+                    q = q + self.validNeighbors(board, curr, seen)
 
         return dist
 
