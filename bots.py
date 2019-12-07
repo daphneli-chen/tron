@@ -66,7 +66,6 @@ class StudentBot:
     #         q = q + self.validNeighbors(board, curr, dist)
     #     return dist
 
-#different bfs
     def bfs(self, start, board):
         """
         start: a tuple representing the player's location
@@ -99,7 +98,6 @@ class StudentBot:
 
         return dist
 
-#different voronoi
     def voronoi(self, asp, state):
         """
         asp: a tron problem
@@ -124,6 +122,7 @@ class StudentBot:
 
         my_count = np.sum(my_dist < other_dist)
         other_count = np.sum(my_dist > other_dist)
+
         return my_count - other_count
 
     # def voronoi(self, asp, state):
