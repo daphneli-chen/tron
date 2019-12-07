@@ -212,6 +212,7 @@ class StudentBot:
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
+        print(actionBest)
         return actionBest
 
 
