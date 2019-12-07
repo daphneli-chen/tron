@@ -44,27 +44,62 @@ class StudentBot:
                     ret.append(loc)
         return ret
 
+    # def bfs(self, start, board):
+    #     """
+    #     start: a tuple representing the player's location
+    #     board: the board of the game
+    #     """
+    #     q = []
+    #     dist = {}
+    #
+    #     parent = {}
+    #     q.append(start)
+    #     # parent[start] = None
+    #     while len(q) != 0:
+    #         curr = q.pop(0) #gets the first item
+    #         if curr in parent:
+    #             dist[curr] = dist[parent[curr]] + 1
+    #         else:
+    #             dist[curr] = 0 #it was our start point
+    #         for neighbor in self.validNeighbors(board, curr, dist):
+    #             parent[neighbor] = curr
+    #         q = q + self.validNeighbors(board, curr, dist)
+    #     return dist
+
+#different bfs
     def bfs(self, start, board):
         """
         start: a tuple representing the player's location
         board: the board of the game
         """
         q = []
-        dist = {}
-        parent = {}
+        # dist = {}
+        dist = np.ones((len(board), len(board[0]))) * int(float("inf"))
+        dist[start[0]][start[1]] = 0
+        seen = {}
+        #uncomment parent dict if you want to know which position led to best transition
+        # parent = {}
         q.append(start)
+        seen[start] = 1
         # parent[start] = None
         while len(q) != 0:
             curr = q.pop(0) #gets the first item
-            if curr in parent:
-                dist[curr] = dist[parent[curr]] + 1
-            else:
-                dist[curr] = 0 #it was our start point
-            for neighbor in self.validNeighbors(board, curr, dist):
-                parent[neighbor] = curr
-            q = q + self.validNeighbors(board, curr, dist)
+            seen[curr] = 1
+            # if curr in parent:
+            #     dist[curr] = dist[parent[curr]] + 1
+            # else:
+            #     dist[curr] = 0 #it was our start point
+            for neighbor in self.validNeighbors(board, curr, seen):
+                temp_cost = dist[curr[0]][curr[1]] + 1
+                if temp_cost < dist[neighbor[0]][neighbor[1]]:
+                    dist[neighbor[0]][neighbor[1]] = temp_cost
+                    # parent[neighbor] = curr
+                    q.append(neighbor)
+                    # q = q + self.validNeighbors(board, curr, seen)
+
         return dist
 
+#different voronoi
     def voronoi(self, asp, state):
         """
         asp: a tron problem
@@ -82,47 +117,73 @@ class StudentBot:
         #each coordinate's minimum distance is found and compare which player has the
         #shortest distance to go by iterating through each location, your heuristics
         #is determined by how many more space u have :)
-        # player_dicts = {}
-        # num_players = len(asp.player_locs)
-        # for p in range(num_players):
-        #     player_dicts[p] = self.bfs(asp.player_locs[p])
-        # player_counts = np.zeros(num_players)
-        #
-        # for r in range(len(board)):
-        #     for c in range(len(board[0])):
-        #         best_player = 0
-        #         min_moves = int(float("inf"))
-        #         for p in range(num_players):
-        #             curr_dict = player_dicts[p]
-        #             if curr_dict[(r,c)] < min_moves:
-        #                 best_player = p
-        #                 min_moves = curr_dict[(r,c)]
-        #             if curr_dict[(r,c)] == min_moves:
-        #
-        #         player_counts[best_player] = player_counts[best_player] + 1
-        # difference = player_counts[0]
-        # for i in range(1, num_players)
 
-        my_dict = self.bfs(state.player_locs[me], board)
-        other_dict = self.bfs(state.player_locs[other], board)
 
-        my_count = 0
-        other_count = 0
-        for r in range(len(board)):
-            for c in range(len(board[0])):
-                if (r,c) not in my_dict and (r,c) not in other_dict:
-                    continue
-                elif (r,c) not in my_dict:
-                    other_count +=1
-                    continue
-                elif (r,c) not in other_dict:
-                    my_count += 1
-                    continue
-                if other_dict[(r,c)] < my_dict[(r,c)]:
-                    other_count += 1
-                elif other_dict[(r,c)] != my_dict[(r,c)]:
-                    my_count += 1
+        my_dist = self.bfs(state.player_locs[me], board)
+        other_dist = self.bfs(state.player_locs[other], board)
+
+        my_count = np.sum(my_dist < other_dist)
+        other_count = np.sum(my_dist > other_dist)
         return my_count - other_count
+
+    # def voronoi(self, asp, state):
+    #     """
+    #     asp: a tron problem
+    #     state: current state of the tron problem
+    #
+    #     returns difference
+    #     """
+    #     num_players = len(state.player_locs)
+    #     me = state.ptm
+    #     board = state.board
+    #     other = 0
+    #     if me == 0:
+    #         other = 1
+    #     #TODO: run bfs for each player, so for each player we have stored a dict where
+    #     #each coordinate's minimum distance is found and compare which player has the
+    #     #shortest distance to go by iterating through each location, your heuristics
+    #     #is determined by how many more space u have :)
+    #     # player_dicts = {}
+    #     # num_players = len(asp.player_locs)
+    #     # for p in range(num_players):
+    #     #     player_dicts[p] = self.bfs(asp.player_locs[p])
+    #     # player_counts = np.zeros(num_players)
+    #     #
+    #     # for r in range(len(board)):
+    #     #     for c in range(len(board[0])):
+    #     #         best_player = 0
+    #     #         min_moves = int(float("inf"))
+    #     #         for p in range(num_players):
+    #     #             curr_dict = player_dicts[p]
+    #     #             if curr_dict[(r,c)] < min_moves:
+    #     #                 best_player = p
+    #     #                 min_moves = curr_dict[(r,c)]
+    #     #             if curr_dict[(r,c)] == min_moves:
+    #     #
+    #     #         player_counts[best_player] = player_counts[best_player] + 1
+    #     # difference = player_counts[0]
+    #     # for i in range(1, num_players)
+    #
+    #     my_dict = self.bfs(state.player_locs[me], board)
+    #     other_dict = self.bfs(state.player_locs[other], board)
+    #
+    #     my_count = 0
+    #     other_count = 0
+    #     for r in range(len(board)):
+    #         for c in range(len(board[0])):
+    #             if (r,c) not in my_dict and (r,c) not in other_dict:
+    #                 continue
+    #             elif (r,c) not in my_dict:
+    #                 other_count +=1
+    #                 continue
+    #             elif (r,c) not in other_dict:
+    #                 my_count += 1
+    #                 continue
+    #             if other_dict[(r,c)] < my_dict[(r,c)]:
+    #                 other_count += 1
+    #             elif other_dict[(r,c)] != my_dict[(r,c)]:
+    #                 my_count += 1
+    #     return my_count - other_count
 
     def decide(self, asp):
         """
@@ -146,7 +207,7 @@ class StudentBot:
         #3. implement alphabeta
         for action in possibleActions:
             newState = asp.transition(start_state, action)
-            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 6, depth, me)
+            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 3, depth, me)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
