@@ -4,6 +4,8 @@ import numpy as np
 from tronproblem import *
 from trontypes import CellType, PowerupType
 import random, math
+from queue import Queue
+import time
 
 # Throughout this file, ASP means adversarial search problem.
 
@@ -20,30 +22,40 @@ class StudentBot:
         self.distance_in_dir = 0
 
 
-    def validNeighbors(self, board, curr, visited):
-        ret =[]
+    def validNeighbors(self, board, curr, my_visited, o_visited, q):
         curr_r = curr[0]
         curr_c = curr[1]
         actions = TronProblem.get_safe_actions(board, curr)
         for action in actions:
             if (action == 'U'):
                 loc = (curr_r - 1, curr_c)
-                if loc not in visited:
-                    ret.append((curr_r - 1, curr_c))
+                if loc not in my_visited and loc not in o_visited:
+                    q.put((curr_r - 1, curr_c))
             elif (action == 'D'):
                 loc = (curr_r + 1, curr_c)
-                if loc not in visited:
-                    ret.append(loc)
+                if loc not in my_visited and loc not in o_visited:
+                    q.put(loc)
             elif (action == 'L'):
                 loc = (curr_r, curr_c - 1)
-                if loc not in visited:
-                    ret.append(loc)
+                if loc not in my_visited and loc not in o_visited:
+                    q.put(loc)
             elif (action == 'R'):
                 loc = (curr_r, curr_c + 1)
-                if loc not in visited:
-                    ret.append(loc)
-        return ret
+                if loc not in my_visited and loc not in o_visited:
+                    q.put(loc)
+        return q
 
+    def getNextLoc(self, curr, action):
+        curr_r = curr[0]
+        curr_c = curr[1]
+        if (action == 'U'):
+            return (curr_r - 1, curr_c)
+        elif (action == 'D'):
+            return (curr_r + 1, curr_c)
+        elif (action == 'L'):
+            return (curr_r, curr_c - 1)
+        elif (action == 'R'):
+            return  (curr_r, curr_c + 1)
     # def bfs(self, start, board):
     #     """
     #     start: a tuple representing the player's location
@@ -66,37 +78,83 @@ class StudentBot:
     #         q = q + self.validNeighbors(board, curr, dist)
     #     return dist
 
-    def bfs(self, start, board):
-        """
-        start: a tuple representing the player's location
-        board: the board of the game
-        """
-        q = []
-        # dist = {}
-        dist = np.ones((len(board), len(board[0]))) * (float("inf"))
-        dist[start[0]][start[1]] = 0
-        seen = {}
-        #uncomment parent dict if you want to know which position led to best transition
-        # parent = {}
-        q.append(start)
-        seen[start] = 1
-        # parent[start] = None
-        while len(q) != 0:
-            curr = q.pop(0) #gets the first item
-            seen[curr] = 1
-            # if curr in parent:
-            #     dist[curr] = dist[parent[curr]] + 1
-            # else:
-            #     dist[curr] = 0 #it was our start point
-            for neighbor in self.validNeighbors(board, curr, seen):
-                temp_cost = dist[curr[0]][curr[1]] + 1
-                if temp_cost < dist[neighbor[0]][neighbor[1]]:
-                    dist[neighbor[0]][neighbor[1]] = temp_cost
-                    # parent[neighbor] = curr
-                    # q.append(neighbor)
-                    q = q + self.validNeighbors(board, curr, seen)
+    # def bfs(self, start, board):
+    #     """
+    #     start: a tuple representing the player's location
+    #     board: the board of the game
+    #     """
+    #     q = []
+    #     # dist = {}
+    #     dist = np.ones((len(board), len(board[0]))) * (float("inf"))
+    #     dist[start[0]][start[1]] = 0
+    #     seen = {}
+    #     #uncomment parent dict if you want to know which position led to best transition
+    #     # parent = {}
+    #     q.append(start)
+    #     seen[start] = 1
+    #     # parent[start] = None
+    #     while len(q) != 0:
+    #         curr = q.pop(0) #gets the first item
+    #         seen[curr] = 1
+    #         # if curr in parent:
+    #         #     dist[curr] = dist[parent[curr]] + 1
+    #         # else:
+    #         #     dist[curr] = 0 #it was our start point
+    #         for neighbor in self.validNeighbors(board, curr, seen):
+    #             temp_cost = dist[curr[0]][curr[1]] + 1
+    #             if temp_cost < dist[neighbor[0]][neighbor[1]]:
+    #                 dist[neighbor[0]][neighbor[1]] = temp_cost
+    #                 # parent[neighbor] = curr
+    #                 # q.append(neighbor)
+    #                 q = q + self.validNeighbors(board, curr, seen)
+    #
+    #     return dist
 
-        return dist
+    def bds(self, my_start, o_start, asp, state):
+        """
+        Does a bidirectional search from each player out, finishes when all squares have been
+        visited
+        """
+        my_frontier = Queue()
+        my_visited = set()
+
+        o_frontier = Queue()
+        o_visited = set()
+
+        actions = asp.get_safe_actions(state.board, my_start)
+        for action in actions:
+            new_loc = self.getNextLoc(my_start, action)
+            my_visited.add(new_loc)
+            my_frontier.put(new_loc)
+        for action in asp.get_safe_actions(state.board, o_start):
+            new_loc = self.getNextLoc(o_start, action)
+            if new_loc not in my_visited:
+                o_visited.add(new_loc)
+                o_frontier.put(new_loc)
+
+        while not my_frontier.empty() or not o_frontier.empty():
+            temp_front = Queue()
+            while not my_frontier.empty():
+                curr = my_frontier.get()
+                for action in asp.get_safe_actions(state.board, curr):
+                    new_loc = self.getNextLoc(curr, action)
+                    if new_loc not in my_visited and new_loc not in o_visited:
+                        my_visited.add(new_loc)
+                        temp_front.put(new_loc)
+            my_frontier = temp_front #new depth level of neighbors
+            temp_front = Queue()
+            while not o_frontier.empty():
+                curr = o_frontier.get()
+                for action in asp.get_safe_actions(state.board, curr):
+                    new_loc = self.getNextLoc(curr, action)
+                    if new_loc not in my_visited and new_loc not in o_visited:
+                        o_visited.add(new_loc)
+                        temp_front.put(new_loc)
+            o_frontier = temp_front
+        print(len(my_visited) - len(o_visited))
+        return len(my_visited) - len(o_visited)
+
+
 
     def voronoi(self, asp, state):
         """
@@ -117,14 +175,15 @@ class StudentBot:
         #is determined by how many more space u have :)
 
         if asp.is_terminal_state(state):
-            return float("-inf")
-        my_dist = self.bfs(state.player_locs[me], board)
-        other_dist = self.bfs(state.player_locs[other], board)
-
-        my_count = np.sum(my_dist < other_dist)
-        other_count = np.sum(my_dist > other_dist)
-
-        return my_count - other_count
+            return 1000 * asp.evaluate_state(state)[me]
+        return self.bds(state.player_locs[me], state.player_locs[other], asp, state)
+        # my_dist = self.bfs(state.player_locs[me], board)
+        # other_dist = self.bfs(state.player_locs[other], board)
+        #
+        # my_count = np.sum(my_dist < other_dist)
+        # other_count = np.sum(my_dist > other_dist)
+        #
+        # return my_count - other_count
 
     # def voronoi(self, asp, state):
     #     """
@@ -207,12 +266,13 @@ class StudentBot:
         #3. implement alphabeta
         for action in possibleActions:
             newState = asp.transition(start_state, action)
-            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 3, depth, me)
+            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 5, depth, me)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
+        print(actionBest)
         return actionBest
 
 
