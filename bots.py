@@ -151,7 +151,6 @@ class StudentBot:
                         o_visited.add(new_loc)
                         temp_front.put(new_loc)
             o_frontier = temp_front
-        print(len(my_visited) - len(o_visited))
         return len(my_visited) - len(o_visited)
 
 
@@ -255,8 +254,8 @@ class StudentBot:
         #TODO: 1) use heuristic to choose best move (plug in left right whatever)
         #2. implement heuristic with a minimax w/ cutoff
         start_state = asp.get_start_state()
-        possibleActions = asp.get_available_actions(start_state)
         me = start_state.player_to_move()
+        possibleActions = asp.get_safe_actions(start_state.board, start_state.player_locs[me])
         actionBest = "U"
 
         bestVal = float("-inf")
@@ -272,7 +271,6 @@ class StudentBot:
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
-        print(actionBest)
         return actionBest
 
 
@@ -283,7 +281,7 @@ class StudentBot:
             return self.voronoi(asp, state)
 
         value = float("-inf")
-        for actions in asp.get_available_actions(state):
+        for actions in asp.get_safe_actions(state.board, state.player_locs[actingPlayer]):
             value = max(value, self.abCutMin(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
             if value >= beta:
                 return value
@@ -297,7 +295,11 @@ class StudentBot:
             return self.voronoi(asp, state)
 
         value = float("inf")
-        for actions in asp.get_available_actions(state):
+
+        other = 0
+        if actingPlayer == 0:
+            other = 1
+        for actions in asp.get_safe_actions(state.board, state.player_locs[other]):
             value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
             if value <= alpha:
                 return value
