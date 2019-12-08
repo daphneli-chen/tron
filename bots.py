@@ -151,6 +151,12 @@ class StudentBot:
                         o_visited.add(new_loc)
                         temp_front.put(new_loc)
             o_frontier = temp_front
+        # print("heuristic value:")
+        # print(len(my_visited) - len(o_visited))
+        # print("at my locs")
+        # print(my_start)
+        # print("at their locs")
+        # print(o_start)
         return len(my_visited) - len(o_visited)
 
 
@@ -172,7 +178,6 @@ class StudentBot:
         #each coordinate's minimum distance is found and compare which player has the
         #shortest distance to go by iterating through each location, your heuristics
         #is determined by how many more space u have :)
-
         if asp.is_terminal_state(state):
             return 1000 * asp.evaluate_state(state)[me]
         return self.bds(state.player_locs[me], state.player_locs[other], asp, state)
@@ -271,12 +276,20 @@ class StudentBot:
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
+        print("my action:")
+        print(actionBest)
+        print("best value:")
+        print(bestVal)
         return actionBest
 
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return asp.evaluate_state(state)[actingPlayer]
+            if asp.evaluate_state(state)[actingPlayer] == 1:
+                return 1000
+            else:
+                return -1000
+            # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
 
@@ -290,7 +303,11 @@ class StudentBot:
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return asp.evaluate_state(state)[actingPlayer]
+            if asp.evaluate_state(state)[actingPlayer] == 1:
+                return 1000
+            else:
+                return -1000
+            # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
 
@@ -299,7 +316,7 @@ class StudentBot:
         other = 0
         if actingPlayer == 0:
             other = 1
-        for actions in asp.get_safe_actions(state.board, state.player_locs[other]):
+        for actions in asp.get_safe_actions(state.board, state.player_locs[actingPlayer]):
             value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
             if value <= alpha:
                 return value
