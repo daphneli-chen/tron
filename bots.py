@@ -116,7 +116,8 @@ class StudentBot:
         #shortest distance to go by iterating through each location, your heuristics
         #is determined by how many more space u have :)
 
-
+        if asp.is_terminal_state(state):
+            return float("-inf")
         my_dist = self.bfs(state.player_locs[me], board)
         other_dist = self.bfs(state.player_locs[other], board)
 
