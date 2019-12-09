@@ -157,11 +157,12 @@ class StudentBot:
         # print(my_start)
         # print("at their locs")
         # print(o_start)
+        print("my visited", len(my_visited), "o_visited", len(o_visited))
         return len(my_visited) - len(o_visited)
 
 
 
-    def voronoi(self, asp, state):
+    def voronoi(self, asp, state, startingPlayer):
         """
         asp: a tron problem
         state: current state of the tron problem
@@ -169,7 +170,7 @@ class StudentBot:
         returns difference
         """
         num_players = len(state.player_locs)
-        me = state.ptm
+        me = startingPlayer
         board = state.board
         other = 0
         if me == 0:
@@ -178,8 +179,8 @@ class StudentBot:
         #each coordinate's minimum distance is found and compare which player has the
         #shortest distance to go by iterating through each location, your heuristics
         #is determined by how many more space u have :)
-        if asp.is_terminal_state(state):
-            return 1000 * asp.evaluate_state(state)[me]
+        # if asp.is_terminal_state(state):
+        #     return 1000 * asp.evaluate_state(state)[me]
         return self.bds(state.player_locs[me], state.player_locs[other], asp, state)
         # my_dist = self.bfs(state.player_locs[me], board)
         # other_dist = self.bfs(state.player_locs[other], board)
@@ -268,9 +269,12 @@ class StudentBot:
         alpha = float("-inf")
 
         #3. implement alphabeta
+        print(start_state)
+        print(possibleActions)
         for action in possibleActions:
             newState = asp.transition(start_state, action)
             receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 5, depth, me)
+            print("received Val for action", action, "is", receivedVal)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
@@ -285,33 +289,53 @@ class StudentBot:
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return -100
+            print("actingPlayer is", actingPlayer)
+
+            print("in terminal state for abcutmin", asp.evaluate_state(state)[actingPlayer])
+            if asp.evaluate_state(state)[actingPlayer] == 1:
+                return float('inf')
+            elif asp.evaluate_state(state)[actingPlayer] == 0:
+                return float('-inf')
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
-            return self.voronoi(asp, state)
+            return self.voronoi(asp, state, actingPlayer)
 
         value = float("-inf")
-        for actions in asp.get_safe_actions(state.board, state.player_locs[actingPlayer]):
+        possibleActions = asp.get_safe_actions(state.board, state.player_locs[actingPlayer])
+        if not possibleActions:
+            return float("-inf")
+        for actions in possibleActions:
             value = max(value, self.abCutMin(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
-            if value >= beta:
-                return value
-            alpha = max(alpha, value)
+            # if value >= beta:
+            #     return value
+            # alpha = max(alpha, value)
         return value
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            return -100
+            print("actingPlayer is", actingPlayer)
+            print("in terminal state for abcutmin", asp.evaluate_state(state)[actingPlayer])
+            if asp.evaluate_state(state)[actingPlayer] == 1:
+                return float('inf')
+            elif asp.evaluate_state(state)[actingPlayer] == 0:
+                return float('-inf')
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
-            return self.voronoi(asp, state)
+            other = 0
+            if actingPlayer == 0:
+                other = 1
+            return self.voronoi(asp, state, other)
 
         value = float("inf")
 
-        for actions in asp.get_safe_actions(state.board, state.player_locs[actingPlayer]):
+        possibleActions = asp.get_safe_actions(state.board, state.player_locs[actingPlayer])
+        if not possibleActions:
+            return float('-inf')
+        for actions in possibleActions:
             value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
-            if value <= alpha:
-                return value
-            beta = min(beta, value)
+            # if value <= alpha:
+            #     return value
+            # beta = min(beta, value)
         return value
 
     def cleanup(self):
