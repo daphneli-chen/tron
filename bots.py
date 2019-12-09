@@ -285,10 +285,7 @@ class StudentBot:
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            if asp.evaluate_state(state)[actingPlayer] == 1:
-                return 1000
-            else:
-                return -1000
+            return -100
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
@@ -303,19 +300,13 @@ class StudentBot:
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            if asp.evaluate_state(state)[actingPlayer] == 1:
-                return 1000
-            else:
-                return -1000
+            return -100
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             return self.voronoi(asp, state)
 
         value = float("inf")
 
-        other = 0
-        if actingPlayer == 0:
-            other = 1
         for actions in asp.get_safe_actions(state.board, state.player_locs[actingPlayer]):
             value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
             if value <= alpha:
