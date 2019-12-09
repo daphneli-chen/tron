@@ -110,55 +110,51 @@ class StudentBot:
     #
     #     return dist
 
-    def bds(self, my_start, o_start, asp, state):
+    def bds(self, asp, state, ptm):
         """
         Does a bidirectional search from each player out, finishes when all squares have been
         visited
         """
+        board = state.board
+        separated = True
+        my_start = state.player_locs[0] #assuming player is 0 for my
+        o_start = state.player_locs[1] #1 for other
         my_frontier = Queue()
-        my_visited = set()
+        my_frontier.put(my_start)
+        my_visited = set(my_start)
 
         o_frontier = Queue()
-        o_visited = set()
-
-        actions = asp.get_safe_actions(state.board, my_start)
-        for action in actions:
-            new_loc = self.getNextLoc(my_start, action)
-            my_visited.add(new_loc)
-            my_frontier.put(new_loc)
-        for action in asp.get_safe_actions(state.board, o_start):
-            new_loc = self.getNextLoc(o_start, action)
-            if new_loc not in my_visited:
-                o_visited.add(new_loc)
-                o_frontier.put(new_loc)
+        o_frontier.put(o_start)
+        o_visited = set(o_start)
 
         while not my_frontier.empty() or not o_frontier.empty():
             temp_front = Queue()
             while not my_frontier.empty():
                 curr = my_frontier.get()
-                for action in asp.get_safe_actions(state.board, curr):
-                    new_loc = self.getNextLoc(curr, action)
+                for action in asp.get_safe_actions(board, curr):
+                    new_loc = asp.move(curr, action)
                     if new_loc not in my_visited and new_loc not in o_visited:
                         my_visited.add(new_loc)
                         temp_front.put(new_loc)
+                    elif new_loc in o_visited:
+                        separated = False
             my_frontier = temp_front #new depth level of neighbors
             temp_front = Queue()
             while not o_frontier.empty():
                 curr = o_frontier.get()
-                for action in asp.get_safe_actions(state.board, curr):
-                    new_loc = self.getNextLoc(curr, action)
+                for action in asp.get_safe_actions(board, curr):
+                    new_loc = asp.move(curr, action)
                     if new_loc not in my_visited and new_loc not in o_visited:
                         o_visited.add(new_loc)
                         temp_front.put(new_loc)
+                    elif new_loc in my_visited:
+                        separated = False
             o_frontier = temp_front
-        # print("heuristic value:")
-        # print(len(my_visited) - len(o_visited))
-        # print("at my locs")
-        # print(my_start)
-        # print("at their locs")
-        # print(o_start)
-        print("my visited", len(my_visited), "o_visited", len(o_visited))
-        return len(my_visited) - len(o_visited)
+        diff = len(my_visited) - len(o_visited)
+        if ptm == 0:
+            return diff, separated
+        else:
+            return -1 *diff, separated
 
 
 
@@ -169,85 +165,26 @@ class StudentBot:
 
         returns difference
         """
-        num_players = len(state.player_locs)
-        me = startingPlayer
-        board = state.board
-        other = 0
-        if me == 0:
-            other = 1
-        #TODO: run bfs for each player, so for each player we have stored a dict where
-        #each coordinate's minimum distance is found and compare which player has the
-        #shortest distance to go by iterating through each location, your heuristics
-        #is determined by how many more space u have :)
-        # if asp.is_terminal_state(state):
-        #     return 1000 * asp.evaluate_state(state)[me]
-        return self.bds(state.player_locs[me], state.player_locs[other], asp, state)
-        # my_dist = self.bfs(state.player_locs[me], board)
-        # other_dist = self.bfs(state.player_locs[other], board)
-        #
-        # my_count = np.sum(my_dist < other_dist)
-        # other_count = np.sum(my_dist > other_dist)
-        #
-        # return my_count - other_count
+        return self.bds(asp, state, startingPlayer)[0]
 
-    # def voronoi(self, asp, state):
-    #     """
-    #     asp: a tron problem
-    #     state: current state of the tron problem
-    #
-    #     returns difference
-    #     """
-    #     num_players = len(state.player_locs)
-    #     me = state.ptm
-    #     board = state.board
-    #     other = 0
-    #     if me == 0:
-    #         other = 1
-    #     #TODO: run bfs for each player, so for each player we have stored a dict where
-    #     #each coordinate's minimum distance is found and compare which player has the
-    #     #shortest distance to go by iterating through each location, your heuristics
-    #     #is determined by how many more space u have :)
-    #     # player_dicts = {}
-    #     # num_players = len(asp.player_locs)
-    #     # for p in range(num_players):
-    #     #     player_dicts[p] = self.bfs(asp.player_locs[p])
-    #     # player_counts = np.zeros(num_players)
-    #     #
-    #     # for r in range(len(board)):
-    #     #     for c in range(len(board[0])):
-    #     #         best_player = 0
-    #     #         min_moves = int(float("inf"))
-    #     #         for p in range(num_players):
-    #     #             curr_dict = player_dicts[p]
-    #     #             if curr_dict[(r,c)] < min_moves:
-    #     #                 best_player = p
-    #     #                 min_moves = curr_dict[(r,c)]
-    #     #             if curr_dict[(r,c)] == min_moves:
-    #     #
-    #     #         player_counts[best_player] = player_counts[best_player] + 1
-    #     # difference = player_counts[0]
-    #     # for i in range(1, num_players)
-    #
-    #     my_dict = self.bfs(state.player_locs[me], board)
-    #     other_dict = self.bfs(state.player_locs[other], board)
-    #
-    #     my_count = 0
-    #     other_count = 0
-    #     for r in range(len(board)):
-    #         for c in range(len(board[0])):
-    #             if (r,c) not in my_dict and (r,c) not in other_dict:
-    #                 continue
-    #             elif (r,c) not in my_dict:
-    #                 other_count +=1
-    #                 continue
-    #             elif (r,c) not in other_dict:
-    #                 my_count += 1
-    #                 continue
-    #             if other_dict[(r,c)] < my_dict[(r,c)]:
-    #                 other_count += 1
-    #             elif other_dict[(r,c)] != my_dict[(r,c)]:
-    #                 my_count += 1
-    #     return my_count - other_count
+    def wallDecide(self, asp):
+        state = asp.get_start_state()
+        locs = state.player_locs
+        board = state.board
+        ptm = state.ptm
+        loc = locs[ptm]
+        possibilities = list(TronProblem.get_safe_actions(board, loc))
+        if not possibilities:
+            return "U"
+        decision = possibilities[0]
+        for move in self.order:
+            if move not in possibilities:
+                continue
+            next_loc = TronProblem.move(loc, move)
+            if len(TronProblem.get_safe_actions(board, next_loc)) < 3:
+                decision = move
+                break
+        return decision
 
     def decide(self, asp):
         """
@@ -263,6 +200,10 @@ class StudentBot:
         me = start_state.player_to_move()
         possibleActions = asp.get_safe_actions(start_state.board, start_state.player_locs[me])
         actionBest = "U"
+
+        # if self.bds(asp, start_state, me)[1]:
+        #     print("separated")
+        #     return self.wallDecide(asp)
 
         bestVal = float("-inf")
         depth = 1
