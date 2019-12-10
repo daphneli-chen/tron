@@ -7,10 +7,13 @@ import random, math
 from collections import deque
 import time
 
+ON_REWARD = 20
+CLOSER_REWARD = 5
 # Throughout this file, ASP means adversarial search problem.
 
 
 class StudentBot:
+
     """ Write your student bot here"""
     def __init__(self):
         order = ["U", "D", "L", "R"]
@@ -121,16 +124,31 @@ class StudentBot:
         o_start = state.player_locs[1] #1 for other
         my_frontier = deque()
         my_visited = set()
+        my_additional = 0
         if my_start != None:
             my_frontier.append((my_start))
             my_visited.add((my_start))
-
+            cell = state.board[my_start[0]][my_start[1]]
+            if cell == CellType.TRAP:
+                my_additional += ON_REWARD
+            elif cell == CellType.BOMB:
+                my_additional += (ON_REWARD * 2)
+            elif cell == CellType.ARMOR:
+                my_additional += ON_REWARD
 
         o_frontier = deque()
         o_visited = set()
+        o_additional = 0
         if o_start != None:
             o_frontier.append((o_start))
             o_visited.add((o_start))
+            cell = state.board[o_start[0]][o_start[1]]
+            if cell == CellType.TRAP:
+                o_additional += ON_REWARD
+            elif cell == CellType.BOMB:
+                o_additional += (ON_REWARD * 2)
+            elif cell == CellType.ARMOR:
+                o_additional += ON_REWARD
 
         while my_frontier or o_frontier:
             temp_front = deque()
@@ -141,6 +159,13 @@ class StudentBot:
                     if new_loc not in my_visited and new_loc not in o_visited:
                         my_visited.add((new_loc))
                         temp_front.append((new_loc))
+                        cell = state.board[new_loc[0]][new_loc[1]]
+                        if cell == CellType.TRAP:
+                            my_additional += CLOSER_REWARD
+                        elif cell == CellType.BOMB:
+                            my_additional += CLOSER_REWARD
+                        elif cell == CellType.ARMOR:
+                            my_additional += CLOSER_REWARD
                     elif new_loc in o_visited:
                         separated = False
             my_frontier = temp_front #new depth level of neighbors
@@ -152,11 +177,18 @@ class StudentBot:
                     if new_loc not in my_visited and new_loc not in o_visited:
                         o_visited.add((new_loc))
                         temp_front.append((new_loc))
+                        cell = state.board[new_loc[0]][new_loc[1]]
+                        if cell == CellType.TRAP:
+                            o_additional += CLOSER_REWARD
+                        elif cell == CellType.BOMB:
+                            o_additional += CLOSER_REWARD
+                        elif cell == CellType.ARMOR:
+                            o_additional += CLOSER_REWARD
+
                     elif new_loc in my_visited:
                         separated = False
             o_frontier = temp_front
-        print(len(my_visited))
-        diff = len(my_visited) - len(o_visited)
+        diff = len(my_visited) + my_additional - (len(o_visited) + o_additional)
         if ptm == 0:
             return diff, separated
         else:
@@ -216,33 +248,22 @@ class StudentBot:
         alpha = float("-inf")
 
         #3. implement alphabeta
-        print(start_state)
-        print(possibleActions)
         for action in possibleActions:
             newState = asp.transition(start_state, action)
             receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 6, depth, me)
-            print("received Val for action", action, "is", receivedVal)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
-        print("my action:")
-        print(actionBest)
-        print("best value:")
-        print(bestVal)
         return actionBest
 
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            print("actingPlayer is", actingPlayer)
-
-            print("in terminal state for abcutmax", asp.evaluate_state(state)[0], asp.evaluate_state(state)[1])
             if asp.evaluate_state(state)[actingPlayer] == 1:
                 return 1000 * abs(self.voronoi(asp, state, actingPlayer))
             else:
-                print("i lost and",  self.voronoi(asp, state, actingPlayer))
                 return -1 * 1000 * abs(self.voronoi(asp, state, actingPlayer))
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
@@ -251,7 +272,6 @@ class StudentBot:
         value = float("-inf")
         possibleActions = asp.get_safe_actions(state.board, state.player_locs[actingPlayer])
         if not possibleActions:
-            print("how did we get here")
             return -1 * 1000 * abs(self.voronoi(asp, state, actingPlayer))
         for actions in possibleActions:
             value = max(value, self.abCutMin(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
@@ -262,13 +282,9 @@ class StudentBot:
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            print(self.voronoi(asp, state, actingPlayer))
-            print("actingPlayer is", actingPlayer)
-            print("in terminal state for abcutmin", asp.evaluate_state(state)[0], asp.evaluate_state(state)[1])
             if asp.evaluate_state(state)[actingPlayer] == 1:
                 return 1000 * abs(self.voronoi(asp, state, actingPlayer))
             else:
-                print("i lost and",  -self.voronoi(asp, state, actingPlayer))
                 return -1000 * abs(self.voronoi(asp, state, actingPlayer))
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
