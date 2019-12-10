@@ -206,7 +206,7 @@ class StudentBot:
         me = start_state.player_to_move()
         possibleActions = asp.get_safe_actions(start_state.board, start_state.player_locs[me])
         actionBest = "U"
-
+        #
         # if self.bds(asp, start_state, me)[1]:
         #     print("separated")
         #     return self.wallDecide(asp)
