@@ -4,13 +4,16 @@ import numpy as np
 from tronproblem import *
 from trontypes import CellType, PowerupType
 import random, math
-from queue import Queue
+from collections import deque
 import time
 
+ON_REWARD = 20
+CLOSER_REWARD = 5
 # Throughout this file, ASP means adversarial search problem.
 
 
 class StudentBot:
+
     """ Write your student bot here"""
     def __init__(self):
         order = ["U", "D", "L", "R"]
@@ -119,38 +122,73 @@ class StudentBot:
         separated = True
         my_start = state.player_locs[0] #assuming player is 0 for my
         o_start = state.player_locs[1] #1 for other
-        my_frontier = Queue()
-        my_frontier.put(my_start)
-        my_visited = set(my_start)
+        my_frontier = deque()
+        my_visited = set()
+        my_additional = 0
+        if my_start != None:
+            my_frontier.append((my_start))
+            my_visited.add((my_start))
+            cell = state.board[my_start[0]][my_start[1]]
+            if cell == CellType.TRAP:
+                my_additional += ON_REWARD
+            elif cell == CellType.BOMB:
+                my_additional += (ON_REWARD * 2)
+            elif cell == CellType.ARMOR:
+                my_additional += ON_REWARD
 
-        o_frontier = Queue()
-        o_frontier.put(o_start)
-        o_visited = set(o_start)
+        o_frontier = deque()
+        o_visited = set()
+        o_additional = 0
+        if o_start != None:
+            o_frontier.append((o_start))
+            o_visited.add((o_start))
+            cell = state.board[o_start[0]][o_start[1]]
+            if cell == CellType.TRAP:
+                o_additional += ON_REWARD
+            elif cell == CellType.BOMB:
+                o_additional += (ON_REWARD * 2)
+            elif cell == CellType.ARMOR:
+                o_additional += ON_REWARD
 
-        while not my_frontier.empty() or not o_frontier.empty():
-            temp_front = Queue()
-            while not my_frontier.empty():
-                curr = my_frontier.get()
+        while my_frontier or o_frontier:
+            temp_front = deque()
+            while my_frontier:
+                curr = my_frontier.popleft()
                 for action in asp.get_safe_actions(board, curr):
                     new_loc = asp.move(curr, action)
                     if new_loc not in my_visited and new_loc not in o_visited:
-                        my_visited.add(new_loc)
-                        temp_front.put(new_loc)
+                        my_visited.add((new_loc))
+                        temp_front.append((new_loc))
+                        cell = state.board[new_loc[0]][new_loc[1]]
+                        if cell == CellType.TRAP:
+                            my_additional += CLOSER_REWARD
+                        elif cell == CellType.BOMB:
+                            my_additional += CLOSER_REWARD
+                        elif cell == CellType.ARMOR:
+                            my_additional += CLOSER_REWARD
                     elif new_loc in o_visited:
                         separated = False
             my_frontier = temp_front #new depth level of neighbors
-            temp_front = Queue()
-            while not o_frontier.empty():
-                curr = o_frontier.get()
+            temp_front = deque()
+            while o_frontier:
+                curr = o_frontier.popleft()
                 for action in asp.get_safe_actions(board, curr):
                     new_loc = asp.move(curr, action)
                     if new_loc not in my_visited and new_loc not in o_visited:
-                        o_visited.add(new_loc)
-                        temp_front.put(new_loc)
+                        o_visited.add((new_loc))
+                        temp_front.append((new_loc))
+                        cell = state.board[new_loc[0]][new_loc[1]]
+                        if cell == CellType.TRAP:
+                            o_additional += CLOSER_REWARD
+                        elif cell == CellType.BOMB:
+                            o_additional += CLOSER_REWARD
+                        elif cell == CellType.ARMOR:
+                            o_additional += CLOSER_REWARD
+
                     elif new_loc in my_visited:
                         separated = False
             o_frontier = temp_front
-        diff = len(my_visited) - len(o_visited)
+        diff = len(my_visited) + my_additional - (len(o_visited) + o_additional)
         if ptm == 0:
             return diff, separated
         else:
@@ -200,7 +238,7 @@ class StudentBot:
         me = start_state.player_to_move()
         possibleActions = asp.get_safe_actions(start_state.board, start_state.player_locs[me])
         actionBest = "U"
-
+        #
         # if self.bds(asp, start_state, me)[1]:
         #     print("separated")
         #     return self.wallDecide(asp)
@@ -210,73 +248,61 @@ class StudentBot:
         alpha = float("-inf")
 
         #3. implement alphabeta
-        print(start_state)
-        print(possibleActions)
         for action in possibleActions:
             newState = asp.transition(start_state, action)
-            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 5, depth, me)
-            print("received Val for action", action, "is", receivedVal)
+            receivedVal = self.abCutMin(asp, newState, alpha, float("inf"), 6, depth, me)
             if receivedVal > bestVal:
                 bestVal = receivedVal
                 actionBest = action
             alpha = max(receivedVal, alpha)
         #Future TODO: Learn a heuristic? deep learning? idk add more - dijkstras?
-        print("my action:")
-        print(actionBest)
-        print("best value:")
-        print(bestVal)
         return actionBest
 
 
     def abCutMax(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            print("actingPlayer is", actingPlayer)
-
-            print("in terminal state for abcutmin", asp.evaluate_state(state)[actingPlayer])
             if asp.evaluate_state(state)[actingPlayer] == 1:
-                return float('inf')
-            elif asp.evaluate_state(state)[actingPlayer] == 0:
-                return float('-inf')
+                return 1000 * abs(self.voronoi(asp, state, actingPlayer))
+            else:
+                return -1 * 1000 * abs(self.voronoi(asp, state, actingPlayer))
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
-            return self.voronoi(asp, state, actingPlayer)
+            return self.voronoi(asp, state, state.ptm)
 
         value = float("-inf")
         possibleActions = asp.get_safe_actions(state.board, state.player_locs[actingPlayer])
         if not possibleActions:
-            return float("-inf")
+            return -1 * 1000 * abs(self.voronoi(asp, state, actingPlayer))
         for actions in possibleActions:
             value = max(value, self.abCutMin(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
-            # if value >= beta:
-            #     return value
-            # alpha = max(alpha, value)
+            if value >= beta:
+                return value
+            alpha = max(alpha, value)
         return value
 
     def abCutMin(self, asp, state, alpha, beta, cutoff, depth, actingPlayer):
         if asp.is_terminal_state(state):
-            print("actingPlayer is", actingPlayer)
-            print("in terminal state for abcutmin", asp.evaluate_state(state)[actingPlayer])
             if asp.evaluate_state(state)[actingPlayer] == 1:
-                return float('inf')
-            elif asp.evaluate_state(state)[actingPlayer] == 0:
-                return float('-inf')
+                return 1000 * abs(self.voronoi(asp, state, actingPlayer))
+            else:
+                return -1000 * abs(self.voronoi(asp, state, actingPlayer))
             # return 1000 * asp.evaluate_state(state)[actingPlayer]
         if depth >= cutoff:
             other = 0
             if actingPlayer == 0:
                 other = 1
-            return self.voronoi(asp, state, other)
+            return self.voronoi(asp, state, state.ptm)
 
         value = float("inf")
 
         possibleActions = asp.get_safe_actions(state.board, state.player_locs[actingPlayer])
         if not possibleActions:
-            return float('-inf')
-        for actions in possibleActions:
+            return -1 * 1000 * abs(self.voronoi(asp, state, actingPlayer))
+        for actions in asp.get_available_actions(state):
             value = min(value, self.abCutMax(asp, asp.transition(state, actions), alpha, beta, cutoff, depth+1, actingPlayer))
-            # if value <= alpha:
-            #     return value
-            # beta = min(beta, value)
+            if value <= alpha:
+                return value
+            beta = min(beta, value)
         return value
 
     def cleanup(self):
